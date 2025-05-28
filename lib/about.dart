@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:math_expressions/math_expressions.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -8,81 +9,119 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  final TextEditingController _controller1 = TextEditingController();
-  final TextEditingController _controller2 = TextEditingController();
+  String _expression = '';
   String _result = '';
 
-  void _calculate(String op) {
-    double? num1 = double.tryParse(_controller1.text);
-    double? num2 = double.tryParse(_controller2.text);
-    if (num1 == null || num2 == null) {
-      setState(() {
-        _result = '请输入有效数字';
-      });
-      return;
-    }
-    double res;
-    switch (op) {
-      case '+':
-        res = num1 + num2;
-        break;
-      case '-':
-        res = num1 - num2;
-        break;
-      case '*':
-        res = num1 * num2;
-        break;
-      case '/':
-        if (num2 == 0) {
-          setState(() {
-            _result = '除数不能为0';
-          });
-          return;
-        }
-        res = num1 / num2;
-        break;
-      default:
-        res = 0;
-    }
+  void _onPressed(String value) {
     setState(() {
-      _result = '结果：$res';
+      if (value == 'C') {
+        _expression = '';
+        _result = '';
+      } else if (value == '⌫') {
+        if (_expression.isNotEmpty) {
+          _expression = _expression.substring(0, _expression.length - 1);
+        }
+      } else if (value == '=') {
+        try {
+          Parser p = Parser();
+          Expression exp = p.parse(
+            _expression.replaceAll('×', '*').replaceAll('÷', '/'),
+          );
+          ContextModel cm = ContextModel();
+          double eval = exp.evaluate(EvaluationType.REAL, cm);
+          _result = '= $eval';
+        } catch (e) {
+          _result = '错误';
+        }
+      } else {
+        _expression += value;
+      }
     });
+  }
+
+  Widget _buildButton(String text, {Color? color}) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color ?? Colors.blue,
+            padding: const EdgeInsets.symmetric(vertical: 22),
+          ),
+          onPressed: () => _onPressed(text),
+          child: Text(text, style: const TextStyle(fontSize: 22)),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('关于')),
+      appBar: AppBar(title: const Text('计算器')),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('简易计算器'),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _controller1,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: '数字1'),
+            const SizedBox(height: 20),
+            Container(
+              alignment: Alignment.centerRight,
+              child: Text(_expression, style: const TextStyle(fontSize: 28)),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller2,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: '数字2'),
+            Container(
+              alignment: Alignment.centerRight,
+              child: Text(
+                _result,
+                style: const TextStyle(fontSize: 24, color: Colors.green),
+              ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(onPressed: () => _calculate('+'), child: const Text('+')),
-                ElevatedButton(onPressed: () => _calculate('-'), child: const Text('-')),
-                ElevatedButton(onPressed: () => _calculate('*'), child: const Text('×')),
-                ElevatedButton(onPressed: () => _calculate('/'), child: const Text('÷')),
-              ],
+            const SizedBox(height: 20),
+            Expanded(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _buildButton('7'),
+                      _buildButton('8'),
+                      _buildButton('9'),
+                      _buildButton('/', color: Colors.orange),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildButton('4'),
+                      _buildButton('5'),
+                      _buildButton('6'),
+                      _buildButton('*', color: Colors.orange),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildButton('1'),
+                      _buildButton('2'),
+                      _buildButton('3'),
+                      _buildButton('-', color: Colors.orange),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildButton('0'),
+                      _buildButton('.'),
+                      _buildButton('C', color: Colors.red),
+                      _buildButton('+', color: Colors.orange),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      _buildButton('(', color: Colors.grey),
+                      _buildButton(')', color: Colors.grey),
+                      _buildButton('⌫', color: Colors.grey),
+                      _buildButton('=', color: Colors.green),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            Text(_result, style: const TextStyle(fontSize: 20)),
           ],
         ),
       ),
